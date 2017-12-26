@@ -6,6 +6,7 @@ import forumdb.ForumDB.Post.PostService;
 import forumdb.ForumDB.User.UserService;
 import forumdb.ForumDB.Vote.Vote;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -84,8 +85,23 @@ public class ThreadController {
 
     @PostMapping(path = "/{slug_or_id}/create")
     public ResponseEntity createPost(@PathVariable("slug_or_id") String slug_or_id, @RequestBody List<Post> posts) {
+
+        int id = -1;
+        try{
+            id = Integer.valueOf(slug_or_id);
+        }catch (NumberFormatException e){
+
+        }
         if(posts.isEmpty())return new ResponseEntity(posts,HttpStatus.CREATED);
-        return new ResponseEntity(new ErrorMessage(),HttpStatus.CREATED);
+        try{
+            Thread thread = threadService.getThread(slug_or_id,id);
+            return new ResponseEntity(postService.createPosts(posts,thread),HttpStatus.CREATED);
+        }catch (EmptyResultDataAccessException e){
+            return new ResponseEntity(new ErrorMessage(),HttpStatus.NOT_FOUND);
+        }catch (DataIntegrityViolationException e){
+            return new ResponseEntity(new ErrorMessage(),HttpStatus.NOT_FOUND);
+        }
+//        return new ResponseEntity(posts,HttpStatus.CREATED);
     }
 
 }

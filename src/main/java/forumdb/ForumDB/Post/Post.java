@@ -39,7 +39,12 @@ public class Post {
     }
 
     public String getCreated() {
-        return created.toInstant().toString();
+        if(created == null) {
+            return null;
+        }else {
+            return created.toInstant().toString();
+        }
+
     }
 
     public void setCreated(Timestamp created) {
@@ -82,7 +87,7 @@ public class Post {
         return parent;
     }
 
-    public void setParent(long parent) {
+    public void setParent(int parent) {
         this.parent = parent;
     }
 

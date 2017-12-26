@@ -89,11 +89,11 @@ public class ThreadService {
 
         String sortFlag = !desc ? "asc" : "desc";
         String includePostFlag = !desc ? ">" : "<";
-        String getPostsTreeSQL = "select p.id, parent_id, f.slug, thread_id, nickname, is_edited, p.message, p.created " +
+        String getPostsTreeSQL = "select p.id, p.parent, f.slug, p.thread, p.author, p.isEdited, p.message, p.created " +
                 "from posts p " +
-                "join forums f on (f.id = p.forum_id) " +
-                "where p.thread_id = ? " + (since != 0 ? "and p.route " + includePostFlag + "(select p2.route from posts p2 where p2.id = " + since + ")" : "") +
-                "order by p.route " + sortFlag + " limit ?";
+                "join forums f on (f.slug = p.forum) " +
+                "where p.thread = ? " + (since != 0 ? "and p.path " + includePostFlag + "(select p2.path from posts p2 where p2.id = " + since + ")" : "") +
+                "order by p.path " + sortFlag + " limit ?";
 
         return jdbcTemplate.query(getPostsTreeSQL, new PostMapper(), thread.getId(),
                 limit);

@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS posts(
     message CITEXT NOT NULL,
     parent INT NOT NULL DEFAULT 0,
     thread INT references threads(id),
-    path INT[] NOT NULL
+    path INT ARRAY NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS votes(

@@ -12,10 +12,10 @@ public class PostMapper implements RowMapper {
         post.setAuthor(rs.getString("author"));
         post.setCreated(rs.getTimestamp("created"));
         post.setForum(rs.getString("forum"));
-        post.setId(rs.getLong("id"));
+        post.setId(rs.getInt("id"));
         post.setEdited(rs.getBoolean("isEdited"));
         post.setMessage(rs.getString("message"));
-        post.setParent(rs.getLong("parent"));
+        post.setParent(rs.getInt("parent"));
         post.setThread(rs.getInt("thread"));
 
         return post;
