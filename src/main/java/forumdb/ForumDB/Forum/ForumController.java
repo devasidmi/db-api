@@ -1,9 +1,9 @@
 package forumdb.ForumDB.Forum;
 
 
+import forumdb.ForumDB.Error.ErrorMessage;
 import forumdb.ForumDB.Thread.Thread;
 import forumdb.ForumDB.Thread.ThreadService;
-import forumdb.ForumDB.Error.ErrorMessage;
 import forumdb.ForumDB.User.User;
 import forumdb.ForumDB.User.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -89,4 +89,12 @@ public class ForumController {
         }
     }
 
+    @GetMapping(path = "/{slug}/users")
+    public ResponseEntity getForumUsers(@PathVariable("slug") String slug,
+                                        @RequestParam(value = "limit", required = false, defaultValue = "0") Integer limit,
+                                        @RequestParam(value = "since", required = false) String since,
+                                        @RequestParam(value = "desc", required = false, defaultValue = "false") boolean desc) {
+
+        return new ResponseEntity(new ErrorMessage(), HttpStatus.NOT_FOUND);
+    }
 }

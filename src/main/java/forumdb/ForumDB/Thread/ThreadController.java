@@ -92,7 +92,6 @@ public class ThreadController {
         }catch (NumberFormatException e){
 
         }
-        if(posts.isEmpty())return new ResponseEntity(posts,HttpStatus.CREATED);
         try{
             Thread thread = threadService.getThread(slug_or_id,id);
             return new ResponseEntity(postService.createPosts(posts,thread),HttpStatus.CREATED);
@@ -101,7 +100,38 @@ public class ThreadController {
         }catch (DataIntegrityViolationException e){
             return new ResponseEntity(new ErrorMessage(),HttpStatus.NOT_FOUND);
         }
-//        return new ResponseEntity(posts,HttpStatus.CREATED);
+    }
+
+
+    @GetMapping(path = "/{slug_or_id}/posts")
+    public ResponseEntity getPosts(@PathVariable(value = "slug_or_id", required = false) String slug_or_id,
+                                          @RequestParam(value = "limit", required = false, defaultValue = "0") Integer limit,
+                                          @RequestParam(value = "since", required = false,defaultValue = "0") Integer since,
+                                          @RequestParam(value = "sort", required = false,defaultValue = "flat") String sort,
+                                          @RequestParam(value = "desc", required = false, defaultValue = "false") Boolean desc){
+
+        int id = -1;
+        try{
+            id = Integer.valueOf(slug_or_id);
+        }catch(NumberFormatException e){
+
+        }
+        try{
+
+            Thread thread = threadService.getThread(slug_or_id,id);
+            switch (sort){
+                case "flat":
+                    return new ResponseEntity(threadService.FlatSort(thread,limit,since,desc),HttpStatus.OK);
+                case "tree":
+                    return new ResponseEntity(threadService.TreeSort(thread,limit,since,desc),HttpStatus.OK);
+                case "parent_tree":
+                    return new ResponseEntity(threadService.ParentSort(thread,limit,since,desc),HttpStatus.OK);
+            }
+
+        }catch (EmptyResultDataAccessException e){
+            return new ResponseEntity(new ErrorMessage(),HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity(new ErrorMessage(),HttpStatus.NOT_FOUND);
     }
 
 }

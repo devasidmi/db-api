@@ -6,8 +6,11 @@ import forumdb.ForumDB.Vote.Vote;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,39 +48,39 @@ public class ThreadService {
         return oldThread;
     }
 
-    private int getNextId(){
+    private int getNextId() {
         return (int) jdbcTemplate.queryForObject("select nextval('votes_id_seq')", Integer.class);
     }
 
-    private int checkUserVoted(String nickname, String slug){
+    private int checkUserVoted(String nickname, String slug) {
 
         String checkUserVotedSQL = "select voice from votes v where v.nickname = ? and v.thread = ?";
-        try{
-             return jdbcTemplate.queryForObject(checkUserVotedSQL,new Object[]{nickname,slug},Integer.class);
-        }catch (EmptyResultDataAccessException e){
+        try {
+            return jdbcTemplate.queryForObject(checkUserVotedSQL, new Object[]{nickname, slug}, Integer.class);
+        } catch (EmptyResultDataAccessException e) {
             return 0;
         }
     }
 
-    public Thread vote(Vote vote, Thread thread){
+    public Thread vote(Vote vote, Thread thread) {
 
         int nextId = getNextId();
         String createVoteSQL = "insert into votes(nickname,voice,id,thread) values(?,?,?,?)";
         String updateThreadAfterVoteSQL = "update threads t set votes = ? where t.slug = ?";
         String lastUserVoteSQL = "update votes set voice = ? where nickname = ? and thread = ?";
 
-        int voice = checkUserVoted(vote.getNickname(),thread.getSlug());
-        if(voice == vote.getVoice()){
+        int voice = checkUserVoted(vote.getNickname(), thread.getSlug());
+        if (voice == vote.getVoice()) {
             return thread;
-        }else {
-            if(voice==0){
-                thread.setVotes(thread.getVotes()+vote.getVoice());
-                jdbcTemplate.update(createVoteSQL,new Object[]{vote.getNickname(),vote.getVoice(),nextId,thread.getSlug()});
-                jdbcTemplate.update(updateThreadAfterVoteSQL,new Object[]{thread.getVotes(),thread.getSlug()});
-            }else{
-                thread.setVotes(thread.getVotes()-voice+vote.getVoice());
-                jdbcTemplate.update(updateThreadAfterVoteSQL,new Object[]{thread.getVotes(),thread.getSlug()});
-                jdbcTemplate.update(lastUserVoteSQL,new Object[]{vote.getVoice(),vote.getNickname(),thread.getSlug()});
+        } else {
+            if (voice == 0) {
+                thread.setVotes(thread.getVotes() + vote.getVoice());
+                jdbcTemplate.update(createVoteSQL, new Object[]{vote.getNickname(), vote.getVoice(), nextId, thread.getSlug()});
+                jdbcTemplate.update(updateThreadAfterVoteSQL, new Object[]{thread.getVotes(), thread.getSlug()});
+            } else {
+                thread.setVotes(thread.getVotes() - voice + vote.getVoice());
+                jdbcTemplate.update(updateThreadAfterVoteSQL, new Object[]{thread.getVotes(), thread.getSlug()});
+                jdbcTemplate.update(lastUserVoteSQL, new Object[]{vote.getVoice(), vote.getNickname(), thread.getSlug()});
 
             }
 
@@ -86,19 +89,59 @@ public class ThreadService {
     }
 
     public List<Post> TreeSort(Thread thread, int limit, int since, boolean desc) {
+        String op = desc ? "<" : ">";
+        String sort = desc ? "desc" : "asc";
 
-        String sortFlag = !desc ? "asc" : "desc";
-        String includePostFlag = !desc ? ">" : "<";
-        String getPostsTreeSQL = "select p.id, p.parent, f.slug, p.thread, p.author, p.isEdited, p.message, p.created " +
-                "from posts p " +
-                "join forums f on (f.slug = p.forum) " +
-                "where p.thread = ? " + (since != 0 ? "and p.path " + includePostFlag + "(select p2.path from posts p2 where p2.id = " + since + ")" : "") +
-                "order by p.path " + sortFlag + " limit ?";
+        String getPostsTreeSQL = "select author, created, forum, id, message, thread, path, parent from posts p" +
+                " join forums f on(f.slug=p.forum)" +
+                " where p.thread = ?" + (since != 0 ? " and p.path " + op + " (select path from posts where id = "+since+")" : "") +
+                " order by p.path " + sort + "" +
+                " limit ?";
 
-        return jdbcTemplate.query(getPostsTreeSQL, new PostMapper(), thread.getId(),
-                limit);
-
+        return jdbcTemplate.query(getPostsTreeSQL,new Object[]{thread.getId(),limit},new PostTreeMapper());
     }
 
+    public List<Post> ParentSort(Thread thread, int limit, int since, boolean desc) {
+        String op = desc ? "<" : ">";
+        String sort = desc ? "desc" : "asc";
+
+        String subQuery = "select id from posts where thread = ? and parent = 0" + (since != 0 ? " and path " + op + " (select path from posts where id = " + since + ")" : "") + "order by id " + sort + " limit ?";
+        String getPostsParentSql = "select author, created, forum, id, message, thread, path, parent from posts p" +
+                " join forums f on(f.slug=p.forum)" +
+                " where p.thread = ? and path[1] in (" + subQuery + ")" +
+                " order by p.path " + sort;
+
+        return jdbcTemplate.query(getPostsParentSql,new Object[]{thread.getId(),thread.getId(),limit},new PostTreeMapper());
+    }
+
+    public List<Post> FlatSort(Thread thread, int limit, int since, boolean desc) {
+
+        String getPostsFlatSQL = "select id, parent, f.slug, thread, author, forum, isEdited, message, created " +
+                "from posts p " +
+                "join forums f on (f.slug = p.forum)" +
+                " where p.thread = ? " + (since != 0 ? "and p.id " + (desc ? "<" : ">") + " " + since + " " : "") +
+                ("order by p.created " + (desc ? "desc" : "asc") + ", id " + (desc ? "desc" : "asc") + " " +
+                        "limit ?");
+
+        List<Post> list = jdbcTemplate.query(getPostsFlatSQL, new Object[]{thread.getId(), limit}, new PostMapper());
+        return list;
+    }
+
+
+    class PostTreeMapper implements RowMapper {
+        public Object mapRow(ResultSet rs, int rowNum) throws SQLException {
+            Post post = new Post();
+
+            post.setAuthor(rs.getString("author"));
+            post.setCreated(rs.getTimestamp("created"));
+            post.setForum(rs.getString("forum"));
+            post.setId(rs.getInt("id"));
+            post.setMessage(rs.getString("message"));
+            post.setParent(rs.getInt("parent"));
+            post.setThread(rs.getInt("thread"));
+
+            return post;
+        }
+    }
 
 }

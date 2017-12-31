@@ -19,10 +19,10 @@ public class PostService {
     private JdbcTemplate jdbcTemplate;
 
     public List<Post> createPosts(List<Post> posts, Thread thread) {
-        String createSQL = "insert into posts(author, message, parent, thread, forum, created, id,path) values(?,?,?,?,?,?,?,"+
-                "array_append((select path from posts where id = ?), currval('posts_id_seq')::INT))";
+        String createSQL = "insert into posts(author, message, parent, thread, forum, created, id, path) values(?,?,?,?,?,?,?,"+
+                "array_append((select path from posts where id = ?), ?::INT))";
 
-        final List<Long> parent_id = jdbcTemplate.query("select nextval('posts_id_seq') from generate_series(1, ?)", new Object[]{posts.size()}, (rs, rowNum) -> rs.getLong(1));
+        final List<Long> ids = jdbcTemplate.query("select nextval('posts_id_seq') from generate_series(1, ?)", new Object[]{posts.size()}, (rs, rowNum) -> rs.getLong(1));
 
         Timestamp created = Timestamp.valueOf(ZonedDateTime.now().toLocalDateTime());
         jdbcTemplate.batchUpdate(createSQL, new BatchPreparedStatementSetter() {
@@ -37,17 +37,14 @@ public class PostService {
                 ps.setInt(4, thread.getId());
                 ps.setString(5, thread.getForum());
                 ps.setTimestamp(6, created);
-                ps.setLong(7, parent_id.get(i));
-                if (post.getParent() != 0) {
-                    ps.setLong(8, post.getParent());
-                } else {
-                    ps.setLong(8, parent_id.get(i));
-                }
+                ps.setLong(7, ids.get(i));
+                ps.setLong(8, post.getParent());
+                ps.setLong(9, ids.get(i));
 
                 post.setForum(thread.getForum());
                 post.setCreated(created);
                 post.setThread(thread.getId());
-                post.setId(parent_id.get(i));
+                post.setId(ids.get(i));
 
 
             }

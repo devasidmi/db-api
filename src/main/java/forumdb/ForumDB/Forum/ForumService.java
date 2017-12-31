@@ -2,11 +2,15 @@ package forumdb.ForumDB.Forum;
 
 import forumdb.ForumDB.Thread.Thread;
 import forumdb.ForumDB.Thread.ThreadMapper;
+import forumdb.ForumDB.User.User;
+import forumdb.ForumDB.User.UserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class ForumService {
