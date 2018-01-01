@@ -8,6 +8,7 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StopWatch;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -98,14 +99,11 @@ public class ThreadService {
     public List<Post> TreeSort(Thread thread, int limit, int since, boolean desc) {
         String op = desc ? "<" : ">";
         String sort = desc ? "desc" : "asc";
-
         String getPostsTreeSQL = "select author, created, forum, id, message, thread, path, parent from posts p" +
-                " join forums f on(f.slug=p.forum)" +
                 " where p.thread = ?" + (since != 0 ? " and p.path " + op + " (select path from posts where id = "+since+")" : "") +
                 " order by p.path " + sort + "" +
                 " limit ?";
-
-        return jdbcTemplate.query(getPostsTreeSQL,new Object[]{thread.getId(),limit},new PostTreeMapper());
+        return jdbcTemplate.query(getPostsTreeSQL, new Object[]{thread.getId(), limit}, new PostTreeMapper());
     }
 
     public List<Post> ParentSort(Thread thread, int limit, int since, boolean desc) {
@@ -114,7 +112,6 @@ public class ThreadService {
 
         String subQuery = "select id from posts where thread = ? and parent = 0" + (since != 0 ? " and path " + op + " (select path from posts where id = " + since + ")" : "") + "order by id " + sort + " limit ?";
         String getPostsParentSql = "select author, created, forum, id, message, thread, path, parent from posts p" +
-                " join forums f on(f.slug=p.forum)" +
                 " where p.thread = ? and path[1] in (" + subQuery + ")" +
                 " order by p.path " + sort;
 
@@ -123,9 +120,8 @@ public class ThreadService {
 
     public List<Post> FlatSort(Thread thread, int limit, int since, boolean desc) {
 
-        String getPostsFlatSQL = "select id, parent, f.slug, thread, author, forum, isEdited, message, created " +
+        String getPostsFlatSQL = "select id, parent, thread, author, forum, isEdited, message, created " +
                 "from posts p " +
-                "join forums f on (f.slug = p.forum)" +
                 " where p.thread = ? " + (since != 0 ? "and p.id " + (desc ? "<" : ">") + " " + since + " " : "") +
                 ("order by p.created " + (desc ? "desc" : "asc") + ", id " + (desc ? "desc" : "asc") + " " +
                         "limit ?");

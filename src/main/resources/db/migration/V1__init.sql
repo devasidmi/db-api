@@ -51,29 +51,36 @@ CREATE TABLE IF NOT EXISTS votes(
 );
 
 DROP INDEX IF EXISTS idx_post_parent_thread;
-CREATE INDEX IF NOT EXISTS idx_post_parent_thread ON posts(parent,thread);
+CREATE INDEX IF NOT EXISTS idx_post_parent_thread ON posts(thread);
 DROP INDEX IF EXISTS idx_post_path;
 CREATE INDEX IF NOT EXISTS idx_post_path ON posts(path);
+DROP INDEX IF EXISTS idx_post_path1;
+CREATE INDEX IF NOT EXISTS idx_post_path1 ON posts(array_length(path, 1));
 DROP INDEX IF EXISTS idx_post_id;
 CREATE INDEX IF NOT EXISTS idx_post_id ON posts(id);
-DROP INDEX IF EXISTS idx_post_path1;
-CREATE INDEX IF NOT EXISTS idx_post_path1 ON posts((path[1]));
-
-DROP INDEX IF EXISTS idx_forums_slug;
-CREATE INDEX IF NOT EXISTS idx_forums_slug ON forums(slug);
-DROP INDEX IF EXISTS idx_threads_forum;
-CREATE INDEX IF NOT EXISTS idx_threads_forum ON threads(forum);
 DROP INDEX IF EXISTS idx_posts_forum;
 CREATE INDEX IF NOT EXISTS idx_posts_forum ON posts(forum);
-DROP INDEX IF EXISTS idx_threads_author;
-CREATE INDEX IF NOT EXISTS idx_threads_author ON threads(author);
 DROP INDEX IF EXISTS idx_posts_author;
 CREATE INDEX IF NOT EXISTS idx_posts_author ON posts(author);
-
-DROP INDEX IF EXISTS idx_users_nickname;
-CREATE INDEX IF NOT EXISTS idx_users_nickname ON users(nickname);
 
 DROP INDEX IF EXISTS idx_forum_users_forum;
 CREATE INDEX IF NOT EXISTS idx_forum_users_forum ON forum_users(forum);
 DROP INDEX IF EXISTS idx_forum_users_nickname;
 CREATE INDEX IF NOT EXISTS idx_forum_users_nickname ON forum_users(nickname);
+
+DROP INDEX IF EXISTS idx_forums_slug;
+CREATE INDEX IF NOT EXISTS idx_forums_slug ON forums(slug);
+
+
+DROP INDEX IF EXISTS idx_threads_id;
+CREATE INDEX IF NOT EXISTS idx_threads_id ON threads(id);
+DROP INDEX IF EXISTS idx_threads_slug;
+CREATE INDEX IF NOT EXISTS idx_threads_slug ON threads(slug);
+DROP INDEX IF EXISTS idx_threads_forum;
+CREATE INDEX IF NOT EXISTS idx_threads_forum ON threads(forum);
+DROP INDEX IF EXISTS idx_threads_author;
+CREATE INDEX IF NOT EXISTS idx_threads_author ON threads(author);
+
+DROP INDEX IF EXISTS idx_users_nickname;
+CREATE INDEX IF NOT EXISTS idx_users_nickname ON users(nickname);
+
