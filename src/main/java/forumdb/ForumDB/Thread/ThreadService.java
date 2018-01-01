@@ -19,9 +19,18 @@ public class ThreadService {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    public Thread getThread(String slug, int id) {
-        String getThreadSQL = "select * from threads where lower(slug) = lower(?) or id = ?";
-        return (Thread) jdbcTemplate.queryForObject(getThreadSQL, new Object[]{slug, id}, new ThreadMapper());
+    public Thread getThreadBySlugOrId(String slugOrId) {
+        try {
+            int id = Integer.valueOf(slugOrId);
+            return getThreadById(id);
+        } catch (NumberFormatException e) {
+            return getThreadBySlug(slugOrId);
+        }
+    }
+
+    public Thread getThreadBySlug(String slug) {
+        String getThreadSQL = "select * from threads where lower(slug) = lower(?)";
+        return (Thread) jdbcTemplate.queryForObject(getThreadSQL, new Object[]{slug}, new ThreadMapper());
     }
 
     public Thread getThreadById(int id) {
@@ -30,26 +39,20 @@ public class ThreadService {
     }
 
     public Thread updateThreadInfo(Thread oldThread, Thread thread) {
-        ArrayList sqlparams = new ArrayList();
         if (thread.getMessage() == null && thread.getTitle() == null) {
             return oldThread;
         }
-        StringBuilder updateThreadInfoSQL = new StringBuilder("update threads set");
-        if (thread.getMessage() != null) {
-            sqlparams.add(thread.getMessage());
-            updateThreadInfoSQL.append(" message = ?,");
-            oldThread.setMessage(thread.getMessage());
+        String updateThreadInfoSql = "update threads set " +
+                (thread.getMessage() != null ?  "message = '" + thread.getMessage() + "'," : "") +
+                (thread.getTitle() != null ?  "title = '" + thread.getTitle() + "'," : "");
+
+        if (!updateThreadInfoSql.endsWith(",")) {
+            return oldThread;
         }
-        if (thread.getTitle() != null) {
-            sqlparams.add(thread.getTitle());
-            oldThread.setTitle(thread.getTitle());
-            updateThreadInfoSQL.append(" title = ?,");
-        }
-        updateThreadInfoSQL.deleteCharAt(updateThreadInfoSQL.length() - 1);
-        sqlparams.add(oldThread.getSlug());
-        sqlparams.add(oldThread.getId());
-        updateThreadInfoSQL.append(" where slug = ? or id = ?");
-        jdbcTemplate.update(updateThreadInfoSQL.toString(), sqlparams.toArray());
+        updateThreadInfoSql = updateThreadInfoSql.substring(0, updateThreadInfoSql.length() - 1) + " where id = " + String.valueOf(oldThread.getId());
+        jdbcTemplate.update(updateThreadInfoSql);
+        if (thread.getMessage() != null) oldThread.setMessage(thread.getMessage());
+        if (thread.getTitle() != null) oldThread.setTitle(thread.getTitle());
         return oldThread;
     }
 
@@ -57,11 +60,11 @@ public class ThreadService {
         return (int) jdbcTemplate.queryForObject("select nextval('votes_id_seq')", Integer.class);
     }
 
-    private int checkUserVoted(String nickname, String slug) {
+    private int checkUserVoted(String nickname, int threadId) {
 
         String checkUserVotedSQL = "select voice from votes v where v.nickname = ? and v.thread = ?";
         try {
-            return jdbcTemplate.queryForObject(checkUserVotedSQL, new Object[]{nickname, slug}, Integer.class);
+            return jdbcTemplate.queryForObject(checkUserVotedSQL, new Object[]{nickname, threadId}, Integer.class);
         } catch (EmptyResultDataAccessException e) {
             return 0;
         }
@@ -71,22 +74,21 @@ public class ThreadService {
 
         int nextId = getNextId();
         String createVoteSQL = "insert into votes(nickname,voice,id,thread) values(?,?,?,?)";
-        String updateThreadAfterVoteSQL = "update threads t set votes = ? where t.slug = ?";
+        String updateThreadAfterVoteSQL = "update threads set votes = votes + ? where id = ?";
         String lastUserVoteSQL = "update votes set voice = ? where nickname = ? and thread = ?";
 
-        int voice = checkUserVoted(vote.getNickname(), thread.getSlug());
+        int voice = checkUserVoted(vote.getNickname(), thread.getId());
         if (voice == vote.getVoice()) {
             return thread;
         } else {
             if (voice == 0) {
                 thread.setVotes(thread.getVotes() + vote.getVoice());
-                jdbcTemplate.update(createVoteSQL, new Object[]{vote.getNickname(), vote.getVoice(), nextId, thread.getSlug()});
-                jdbcTemplate.update(updateThreadAfterVoteSQL, new Object[]{thread.getVotes(), thread.getSlug()});
+                jdbcTemplate.update(createVoteSQL, new Object[]{vote.getNickname(), vote.getVoice(), nextId, thread.getId()});
+                jdbcTemplate.update(updateThreadAfterVoteSQL, new Object[]{vote.getVoice(), thread.getId()});
             } else {
                 thread.setVotes(thread.getVotes() - voice + vote.getVoice());
-                jdbcTemplate.update(updateThreadAfterVoteSQL, new Object[]{thread.getVotes(), thread.getSlug()});
-                jdbcTemplate.update(lastUserVoteSQL, new Object[]{vote.getVoice(), vote.getNickname(), thread.getSlug()});
-
+                jdbcTemplate.update(lastUserVoteSQL, new Object[]{vote.getVoice(), vote.getNickname(), thread.getId()});
+                jdbcTemplate.update(updateThreadAfterVoteSQL, new Object[]{vote.getVoice() - voice, thread.getId()});
             }
 
         }

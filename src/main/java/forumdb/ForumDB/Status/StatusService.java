@@ -19,17 +19,16 @@ public class StatusService {
         String threadCountSQL = "select count(*) from threads";
         String userCountSQL = "select count(*) from users";
 
-        dbstatus.setForumCount(jdbcTemplate.queryForObject(forumCountSQL,Integer.class));
-        dbstatus.setPostCount(jdbcTemplate.queryForObject(postCountSQL,Integer.class));
-        dbstatus.setThreadCount(jdbcTemplate.queryForObject(threadCountSQL,Integer.class));
-        dbstatus.setUserCount(jdbcTemplate.queryForObject(userCountSQL,Integer.class));
-
+        dbstatus.setForumCount(jdbcTemplate.queryForObject(forumCountSQL, Integer.class));
+        dbstatus.setPostCount(jdbcTemplate.queryForObject(postCountSQL, Integer.class));
+        dbstatus.setThreadCount(jdbcTemplate.queryForObject(threadCountSQL, Integer.class));
+        dbstatus.setUserCount(jdbcTemplate.queryForObject(userCountSQL, Integer.class));
 
 
         return dbstatus;
     }
 
-    public void clearDB(){
+    public void clearDB() {
         jdbcTemplate.execute("truncate table users, forums, threads, votes, posts cascade");
     }
 
@@ -46,24 +45,13 @@ class StatusJSON {
     @JsonProperty
     private int user;
 
-    public int getForumCount() {
-        return forum;
-    }
 
     public void setForumCount(int forum) {
         this.forum = forum;
     }
 
-    public int getPostCount() {
-        return post;
-    }
-
     public void setPostCount(int post) {
         this.post = post;
-    }
-
-    public int getThreadCount() {
-        return thread;
     }
 
     public void setThreadCount(int thread) {

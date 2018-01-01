@@ -37,13 +37,7 @@ public class ThreadController {
     @GetMapping(path = "/{slug_or_id}/details")
     public ResponseEntity getThreadInfo(@PathVariable("slug_or_id") String slug_or_id) {
         try {
-            int id = -1;
-            try {
-                id = Integer.valueOf(slug_or_id);
-            } catch (NumberFormatException e) {
-
-            }
-            return new ResponseEntity(threadService.getThread(slug_or_id, id), HttpStatus.OK);
+            return new ResponseEntity(threadService.getThreadBySlugOrId(slug_or_id), HttpStatus.OK);
         } catch (EmptyResultDataAccessException e) {
             return new ResponseEntity(new ErrorMessage(), HttpStatus.NOT_FOUND);
         }
@@ -52,14 +46,7 @@ public class ThreadController {
     @PostMapping(path = "/{slug_or_id}/details")
     public ResponseEntity updateThreadInfo(@PathVariable("slug_or_id") String slug_or_id, @RequestBody Thread thread) {
         try {
-            int id = -1;
-            try {
-                id = Integer.valueOf(slug_or_id);
-            } catch (NumberFormatException e) {
-
-            }
-            Thread oldThread = threadService.getThread(slug_or_id, id);
-
+            Thread oldThread = threadService.getThreadBySlugOrId(slug_or_id);
             return new ResponseEntity(threadService.updateThreadInfo(oldThread, thread), HttpStatus.OK);
         } catch (EmptyResultDataAccessException e) {
             return new ResponseEntity(new ErrorMessage(), HttpStatus.NOT_FOUND);
@@ -69,13 +56,7 @@ public class ThreadController {
     @PostMapping(path = "/{slug_or_id}/vote")
     public ResponseEntity voteThread(@PathVariable("slug_or_id") String slug_or_id, @RequestBody Vote vote) {
         try {
-            int id = -1;
-            try {
-                id = Integer.valueOf(slug_or_id);
-            } catch (NumberFormatException e) {
-
-            }
-            Thread thread = threadService.getThread(slug_or_id, id);
+            Thread thread = threadService.getThreadBySlugOrId(slug_or_id);
             userService.getProfile(vote.getNickname());
             return new ResponseEntity(threadService.vote(vote, thread), HttpStatus.OK);
         } catch (EmptyResultDataAccessException e) {
@@ -86,14 +67,8 @@ public class ThreadController {
     @PostMapping(path = "/{slug_or_id}/create")
     public ResponseEntity createPost(@PathVariable("slug_or_id") String slug_or_id, @RequestBody List<Post> posts) {
 
-        int id = -1;
         try {
-            id = Integer.valueOf(slug_or_id);
-        } catch (NumberFormatException e) {
-
-        }
-        try {
-            Thread thread = threadService.getThread(slug_or_id, id);
+            Thread thread = threadService.getThreadBySlugOrId(slug_or_id);
             return new ResponseEntity(postService.createPosts(posts, thread), HttpStatus.CREATED);
         } catch (EmptyResultDataAccessException e) {
             return new ResponseEntity(new ErrorMessage(), HttpStatus.NOT_FOUND);
@@ -112,15 +87,8 @@ public class ThreadController {
                                    @RequestParam(value = "sort", required = false, defaultValue = "flat") String sort,
                                    @RequestParam(value = "desc", required = false, defaultValue = "false") Boolean desc) {
 
-        int id = -1;
         try {
-            id = Integer.valueOf(slug_or_id);
-        } catch (NumberFormatException e) {
-
-        }
-        try {
-
-            Thread thread = threadService.getThread(slug_or_id, id);
+            Thread thread = threadService.getThreadBySlugOrId(slug_or_id);
             switch (sort) {
                 case "flat":
                     return new ResponseEntity(threadService.FlatSort(thread, limit, since, desc), HttpStatus.OK);

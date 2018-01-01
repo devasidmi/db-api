@@ -1,10 +1,10 @@
-FROM ubuntu:17.04
+FROM ubuntu:16.04
 
 # Update packages
 RUN apt-get -y update
 
 # Install postgresql
-ENV PGVER 9.6
+ENV PGVER 9.5
 RUN apt-get install -y postgresql-$PGVER
 
 USER postgres

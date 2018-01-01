@@ -2,6 +2,7 @@ package forumdb.ForumDB.Post;
 
 import forumdb.ForumDB.Error.ErrorMessage;
 import forumdb.ForumDB.Thread.Thread;
+import forumdb.ForumDB.User.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -12,6 +13,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -62,16 +64,31 @@ public class PostService {
                 post.setCreated(created);
                 post.setThread(thread.getId());
                 post.setId(ids.get(i));
-
-
             }
-
             @Override
             public int getBatchSize() {
                 return posts.size();
             }
         });
 
+        try {
+            List<String> users = new ArrayList<>(posts.stream().map(Post::getAuthor).collect(Collectors.toSet()));
+            String createUserForumsSQL = "insert into forum_users(nickname, forum) values(?,?)";
+            jdbcTemplate.batchUpdate(createUserForumsSQL, new BatchPreparedStatementSetter() {
+                @Override
+                public void setValues(PreparedStatement ps, int i) throws SQLException {
+                    ps.setString(1, users.get(i));
+                    ps.setString(2, thread.getForum());
+                }
+
+                @Override
+                public int getBatchSize() {
+                    return users.size();
+                }
+            });
+        } catch (Exception e) {
+            System.out.println(e.toString());
+        }
         String sqlUpdate = "update forums set posts = posts + ? where slug = ?";
         jdbcTemplate.update(sqlUpdate, posts.size(), thread.getForum());
 

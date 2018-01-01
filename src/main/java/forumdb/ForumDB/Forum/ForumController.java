@@ -67,7 +67,7 @@ public class ForumController {
             return new ResponseEntity(new ErrorMessage(), HttpStatus.NOT_FOUND);
         } catch (DuplicateKeyException e) {
             try {
-                return new ResponseEntity(threadService.getThread(thread.getSlug(), -1), HttpStatus.CONFLICT);
+                return new ResponseEntity(threadService.getThreadBySlug(thread.getSlug()), HttpStatus.CONFLICT);
             } catch (EmptyResultDataAccessException e1) {
                 return new ResponseEntity(new ErrorMessage(), HttpStatus.NOT_FOUND);
             }

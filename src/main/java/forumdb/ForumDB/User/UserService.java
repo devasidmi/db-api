@@ -26,31 +26,15 @@ public class UserService {
     }
 
     public void updateUser(User user) {
-        final StringBuilder updateUserSQL = new StringBuilder("update users set");
-        final List<Object> updateFields = new ArrayList<>();
+        String updateUserSql = "update users set " +
+                (user.getFullname() != null ?  "fullname = '" + user.getFullname() + "'," : "") +
+                (user.getEmail() != null ?  "email = '" + user.getEmail() + "'," : "") +
+                (user.getAbout() != null ?  "about = '" + user.getAbout() + "'," : "");
 
-        if (user.getFullname() != null && !user.getFullname().isEmpty()) {
-            updateUserSQL.append(" fullname = ?,");
-            updateFields.add(user.getFullname());
-        }
-
-        if (user.getEmail() != null && !user.getEmail().isEmpty()) {
-            updateUserSQL.append(" email = ?,");
-            updateFields.add(user.getEmail());
-        }
-
-        if (user.getAbout() != null && !user.getAbout().isEmpty()) {
-            updateUserSQL.append(" about = ?,");
-            updateFields.add(user.getAbout());
-        }
-
-        if (updateFields.isEmpty()) {
+        if (!updateUserSql.endsWith(",")) {
             return;
         }
-
-        updateUserSQL.deleteCharAt(updateUserSQL.length() - 1);
-        updateUserSQL.append(" where lower(nickname) = ?");
-        updateFields.add(user.getNickname().toLowerCase());
-        jdbcTemplate.update(updateUserSQL.toString(), updateFields.toArray());
+        updateUserSql = updateUserSql.substring(0, updateUserSql.length() - 1) + " where lower(nickname) = ?";
+        jdbcTemplate.update(updateUserSql.toString(), user.getNickname().toLowerCase());
     }
 }

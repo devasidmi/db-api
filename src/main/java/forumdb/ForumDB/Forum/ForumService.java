@@ -13,7 +13,10 @@ import org.springframework.stereotype.Service;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class ForumService {
@@ -57,6 +60,9 @@ public class ForumService {
         thread.setId(id);
         thread.setForum(forum.getSlug());
         updateForumThreadCount(forum.getSlug());
+
+        String updateForumUsers = "insert into forum_users(nickname, forum) values(?,?)";
+        jdbcTemplate.update(updateForumUsers, new Object[]{thread.getAuthor(), forum.getSlug()});
         return thread;
     }
 
@@ -71,18 +77,20 @@ public class ForumService {
 
     public List<User> getForumUsers(String slug, Integer limit, String since, Boolean desc) {
         String sort = desc ? "desc" : "asc";
-        since = since != null ? " where nickname " + (desc ? "< " : "> ") + "'" + since + "'" : "";
+        String sinceInternal = since != null ? " nickname " + (desc ? "< " : "> ") + "'" + since + "' and " : "";
         String limitOp = limit != null ? " limit " + limit : "";
-        String getForumUsersSQL =
-                "select u.* from (" +
-                "select author from threads where forum = '" + slug + "'" +
-                " union " +
-                "select author from posts where forum = '" + slug + "'" +
-                ") as authors " +
-                        "join users u on(u.nickname = authors.author) " +
-                        since +
-                " order by nickname " + sort +
-                        limitOp;
-        return jdbcTemplate.query(getForumUsersSQL, new Object[]{}, new UserMapper());
+        String getForumUsersSql = "select users.nickname, fullname, email, about from (select DISTINCT nickname from forum_users where " + sinceInternal + " forum = '" + slug + "' order by nickname " + sort + limitOp + ") as subQuery" +
+                " join users on (users.nickname = subQuery.nickname) order by users.nickname " + sort;
+//        String getForumUsersSQL =
+//                "select u.* from (" +
+//                "select author from threads where " + sinceInternal + " forum = '" + slug + "'" +
+//                " union " +
+//                "select author from posts where " + sinceInternal +  "forum = '" + slug + "'" +
+//                " order by author " + sort + " " + limitOp +
+//                ") as authors " +
+//                        "join users u on(u.nickname = authors.author) " +
+//                " order by nickname " + sort +
+//                        limitOp;
+        return jdbcTemplate.query(getForumUsersSql, new UserMapper());
     }
 }
