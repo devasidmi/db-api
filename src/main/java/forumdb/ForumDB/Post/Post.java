@@ -2,6 +2,7 @@ package forumdb.ForumDB.Post;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonView;
 
 import java.sql.Timestamp;
 
@@ -67,6 +68,7 @@ public class Post {
         this.id = id;
     }
 
+    @JsonProperty(value = "isEdited")
     public boolean isEdited() {
         return isEdited;
     }

@@ -24,6 +24,11 @@ public class ThreadService {
         return (Thread) jdbcTemplate.queryForObject(getThreadSQL, new Object[]{slug, id}, new ThreadMapper());
     }
 
+    public Thread getThreadById(int id) {
+        String getThreadSQL = "select * from threads where id = ?";
+        return (Thread) jdbcTemplate.queryForObject(getThreadSQL, new Object[]{id}, new ThreadMapper());
+    }
+
     public Thread updateThreadInfo(Thread oldThread, Thread thread) {
         ArrayList sqlparams = new ArrayList();
         if (thread.getMessage() == null && thread.getTitle() == null) {

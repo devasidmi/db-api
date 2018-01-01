@@ -87,51 +87,53 @@ public class ThreadController {
     public ResponseEntity createPost(@PathVariable("slug_or_id") String slug_or_id, @RequestBody List<Post> posts) {
 
         int id = -1;
-        try{
+        try {
             id = Integer.valueOf(slug_or_id);
-        }catch (NumberFormatException e){
+        } catch (NumberFormatException e) {
 
         }
-        try{
-            Thread thread = threadService.getThread(slug_or_id,id);
-            return new ResponseEntity(postService.createPosts(posts,thread),HttpStatus.CREATED);
-        }catch (EmptyResultDataAccessException e){
-            return new ResponseEntity(new ErrorMessage(),HttpStatus.NOT_FOUND);
-        }catch (DataIntegrityViolationException e){
-            return new ResponseEntity(new ErrorMessage(),HttpStatus.NOT_FOUND);
+        try {
+            Thread thread = threadService.getThread(slug_or_id, id);
+            return new ResponseEntity(postService.createPosts(posts, thread), HttpStatus.CREATED);
+        } catch (EmptyResultDataAccessException e) {
+            return new ResponseEntity(new ErrorMessage(), HttpStatus.NOT_FOUND);
+        } catch (DataIntegrityViolationException e) {
+            return new ResponseEntity(new ErrorMessage(), HttpStatus.NOT_FOUND);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity(new ErrorMessage(), HttpStatus.CONFLICT);
         }
     }
 
 
     @GetMapping(path = "/{slug_or_id}/posts")
     public ResponseEntity getPosts(@PathVariable(value = "slug_or_id", required = false) String slug_or_id,
-                                          @RequestParam(value = "limit", required = false, defaultValue = "0") Integer limit,
-                                          @RequestParam(value = "since", required = false,defaultValue = "0") Integer since,
-                                          @RequestParam(value = "sort", required = false,defaultValue = "flat") String sort,
-                                          @RequestParam(value = "desc", required = false, defaultValue = "false") Boolean desc){
+                                   @RequestParam(value = "limit", required = false, defaultValue = "0") Integer limit,
+                                   @RequestParam(value = "since", required = false, defaultValue = "0") Integer since,
+                                   @RequestParam(value = "sort", required = false, defaultValue = "flat") String sort,
+                                   @RequestParam(value = "desc", required = false, defaultValue = "false") Boolean desc) {
 
         int id = -1;
-        try{
+        try {
             id = Integer.valueOf(slug_or_id);
-        }catch(NumberFormatException e){
+        } catch (NumberFormatException e) {
 
         }
-        try{
+        try {
 
-            Thread thread = threadService.getThread(slug_or_id,id);
-            switch (sort){
+            Thread thread = threadService.getThread(slug_or_id, id);
+            switch (sort) {
                 case "flat":
-                    return new ResponseEntity(threadService.FlatSort(thread,limit,since,desc),HttpStatus.OK);
+                    return new ResponseEntity(threadService.FlatSort(thread, limit, since, desc), HttpStatus.OK);
                 case "tree":
-                    return new ResponseEntity(threadService.TreeSort(thread,limit,since,desc),HttpStatus.OK);
+                    return new ResponseEntity(threadService.TreeSort(thread, limit, since, desc), HttpStatus.OK);
                 case "parent_tree":
-                    return new ResponseEntity(threadService.ParentSort(thread,limit,since,desc),HttpStatus.OK);
+                    return new ResponseEntity(threadService.ParentSort(thread, limit, since, desc), HttpStatus.OK);
             }
 
-        }catch (EmptyResultDataAccessException e){
-            return new ResponseEntity(new ErrorMessage(),HttpStatus.NOT_FOUND);
+        } catch (EmptyResultDataAccessException e) {
+            return new ResponseEntity(new ErrorMessage(), HttpStatus.NOT_FOUND);
         }
-        return new ResponseEntity(new ErrorMessage(),HttpStatus.NOT_FOUND);
+        return new ResponseEntity(new ErrorMessage(), HttpStatus.NOT_FOUND);
     }
 
 }

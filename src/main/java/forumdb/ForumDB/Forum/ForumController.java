@@ -91,10 +91,15 @@ public class ForumController {
 
     @GetMapping(path = "/{slug}/users")
     public ResponseEntity getForumUsers(@PathVariable("slug") String slug,
-                                        @RequestParam(value = "limit", required = false, defaultValue = "0") Integer limit,
+                                        @RequestParam(value = "limit", required = false) Integer limit,
                                         @RequestParam(value = "since", required = false) String since,
                                         @RequestParam(value = "desc", required = false, defaultValue = "false") boolean desc) {
 
-        return new ResponseEntity(new ErrorMessage(), HttpStatus.NOT_FOUND);
+        try {
+            Forum forum = forumService.getForumBySlug(slug);
+            return new ResponseEntity(forumService.getForumUsers(slug, limit, since, desc), HttpStatus.OK);
+        } catch (EmptyResultDataAccessException e) {
+            return new ResponseEntity(new ErrorMessage(), HttpStatus.NOT_FOUND);
+        }
     }
 }

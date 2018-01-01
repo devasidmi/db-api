@@ -1,16 +1,20 @@
 package forumdb.ForumDB.Post;
 
+import forumdb.ForumDB.Error.ErrorMessage;
 import forumdb.ForumDB.Thread.Thread;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class PostService {
@@ -18,12 +22,25 @@ public class PostService {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    public Post getPostById(int id) {
+        String getPostByIdSQL = "select * from posts where id = ?";
+        return (Post) jdbcTemplate.queryForObject(getPostByIdSQL, new PostMapper(), id);
+    }
+
     public List<Post> createPosts(List<Post> posts, Thread thread) {
-        String createSQL = "insert into posts(author, message, parent, thread, forum, created, id, path) values(?,?,?,?,?,?,?,"+
+        String createSQL = "insert into posts(author, message, parent, thread, forum, created, id, path) values(?,?,?,?,?,?,?," +
                 "array_append((select path from posts where id = ?), ?::INT))";
 
-        final List<Long> ids = jdbcTemplate.query("select nextval('posts_id_seq') from generate_series(1, ?)", new Object[]{posts.size()}, (rs, rowNum) -> rs.getLong(1));
-
+        List<Long> ids = jdbcTemplate.query("select nextval('posts_id_seq') from generate_series(1, ?)", new Object[]{posts.size()}, (rs, rowNum) -> rs.getLong(1));
+        Set<String> parents = posts.stream().filter(p -> p.getParent() != 0).map(Post::getParent).map(String::valueOf).collect(Collectors.toSet());
+        if (!parents.isEmpty()) {
+            String checkParents = "select count(id) from posts where thread = " + thread.getId() + " and id in (" + String.join(", ", parents) + ")";
+            int parentsCount = jdbcTemplate.queryForObject(checkParents, Integer.class);
+            if (parents.size() != parentsCount) {
+                System.out.println();
+            }
+            Assert.isTrue(parents.size() == parentsCount, new ErrorMessage().getMessage());
+        }
         Timestamp created = Timestamp.valueOf(ZonedDateTime.now().toLocalDateTime());
         jdbcTemplate.batchUpdate(createSQL, new BatchPreparedStatementSetter() {
             @Override
@@ -61,5 +78,17 @@ public class PostService {
         return posts;
     }
 
+    public Post updatePost(int id, Post newPost, Post oldPost) {
+        if (newPost.getMessage() != null && !newPost.getMessage().equals(oldPost.getMessage())) {
+            String updatePostSQL = "update posts set isEdited = true, message = ? where id = ?";
+            jdbcTemplate.update(updatePostSQL, newPost.getMessage(), id);
+
+            oldPost.setMessage(newPost.getMessage());
+            oldPost.setEdited(true);
+            return oldPost;
+        } else {
+            return oldPost;
+        }
+    }
 
 }
