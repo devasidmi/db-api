@@ -61,8 +61,8 @@ public class ForumService {
         thread.setForum(forum.getSlug());
         updateForumThreadCount(forum.getSlug());
             try {
-                String findNewUsersSql = "SELECT exists(SELECT nickname FROM forum_users WHERE forum = '" + forum.getSlug() + "' and nickname = '" + thread.getAuthor() + "')";
-                Boolean haveUser = jdbcTemplate.queryForObject(findNewUsersSql, Boolean.class);
+                String findNewUsersSql = "SELECT exists(SELECT nickname FROM forum_users WHERE forum = ? and nickname = ?)";
+                Boolean haveUser = jdbcTemplate.queryForObject(findNewUsersSql,Boolean.class,forum.getSlug(),thread.getAuthor());
 
                 if (!haveUser) {
                     String updateForumUsers = "insert into forum_users(nickname, forum) values(?,?)";
