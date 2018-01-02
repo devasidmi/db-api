@@ -2,7 +2,6 @@ package forumdb.ForumDB.Post;
 
 import forumdb.ForumDB.Error.ErrorMessage;
 import forumdb.ForumDB.Thread.Thread;
-import forumdb.ForumDB.User.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -75,37 +74,38 @@ public class PostService {
 
         List<String> users = new ArrayList<>(posts.stream().map(Post::getAuthor).collect(Collectors.toSet()));
 
-        try {
+        synchronized (this) {
+            try {
 
-            if (!users.isEmpty()) {
-                String findNewUsersSql = "SELECT nickname FROM forum_users WHERE forum = '" + thread.getForum() + "' and nickname in (" +
-                        String.join(",", users.stream().map(s -> "'" + s + "'").collect(Collectors.toList())) + ")";
-                HashSet<String> oldUsers = new HashSet<>(jdbcTemplate.queryForList(findNewUsersSql, String.class));
-                List<String> newUsers = users.stream().filter(n -> !oldUsers.contains(n)).collect(Collectors.toList());
+                if (!users.isEmpty()) {
+                    String findNewUsersSql = "SELECT nickname FROM forum_users WHERE forum = '" + thread.getForum() + "' and nickname in (" +
+                            String.join(",", users.stream().map(s -> "'" + s + "'").collect(Collectors.toList())) + ")";
+                    HashSet<String> oldUsers = new HashSet<>(jdbcTemplate.queryForList(findNewUsersSql, String.class));
+                    List<String> newUsers = users.stream().filter(n -> !oldUsers.contains(n)).collect(Collectors.toList());
 
-                if (!newUsers.isEmpty()) {
-                    String createUserForumsSQL = "insert into forum_users(nickname, forum) values(?,?)";
-                    jdbcTemplate.batchUpdate(createUserForumsSQL, new BatchPreparedStatementSetter() {
-                        @Override
-                        public void setValues(PreparedStatement ps, int i) throws SQLException {
-                            ps.setString(1, newUsers.get(i));
-                            ps.setString(2, thread.getForum());
-                        }
+                    if (!newUsers.isEmpty()) {
+                        String createUserForumsSQL = "insert into forum_users(nickname, forum) values(?,?)";
+                        jdbcTemplate.batchUpdate(createUserForumsSQL, new BatchPreparedStatementSetter() {
+                            @Override
+                            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                                ps.setString(1, newUsers.get(i));
+                                ps.setString(2, thread.getForum());
+                            }
 
-                        @Override
-                        public int getBatchSize() {
-                            return newUsers.size();
-                        }
-                    });
+                            @Override
+                            public int getBatchSize() {
+                                return newUsers.size();
+                            }
+                        });
+                    }
                 }
+
+            } catch (Exception e) {
+                System.out.println(e.toString());
             }
-
-        } catch (Exception e) {
-            System.out.println(e.toString());
+            String sqlUpdate = "update forums set posts = posts + ? where slug = ?";
+            jdbcTemplate.update(sqlUpdate, posts.size(), thread.getForum());
         }
-        String sqlUpdate = "update forums set posts = posts + ? where slug = ?";
-        jdbcTemplate.update(sqlUpdate, posts.size(), thread.getForum());
-
         return posts;
     }
 

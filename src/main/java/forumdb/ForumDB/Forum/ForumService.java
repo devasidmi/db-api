@@ -60,16 +60,18 @@ public class ForumService {
         thread.setId(id);
         thread.setForum(forum.getSlug());
         updateForumThreadCount(forum.getSlug());
-        try {
-            String findNewUsersSql = "SELECT exists(SELECT nickname FROM forum_users WHERE forum = '" + forum.getSlug() + "' and nickname = '" + thread.getAuthor() + "')";
-            Boolean haveUser = jdbcTemplate.queryForObject(findNewUsersSql, Boolean.class);
+        synchronized (this) {
+            try {
+                String findNewUsersSql = "SELECT exists(SELECT nickname FROM forum_users WHERE forum = '" + forum.getSlug() + "' and nickname = '" + thread.getAuthor() + "')";
+                Boolean haveUser = jdbcTemplate.queryForObject(findNewUsersSql, Boolean.class);
 
-            if (!haveUser) {
-                String updateForumUsers = "insert into forum_users(nickname, forum) values(?,?)";
-                jdbcTemplate.update(updateForumUsers, new Object[]{thread.getAuthor(), forum.getSlug()});
+                if (!haveUser) {
+                    String updateForumUsers = "insert into forum_users(nickname, forum) values(?,?)";
+                    jdbcTemplate.update(updateForumUsers, new Object[]{thread.getAuthor(), forum.getSlug()});
+                }
+            } catch (Exception e) {
+                System.out.println(e.toString());
             }
-        } catch (Exception e) {
-            System.out.println(e.toString());
         }
         return thread;
     }
