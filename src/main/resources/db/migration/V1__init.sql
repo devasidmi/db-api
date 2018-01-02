@@ -67,6 +67,8 @@ DROP INDEX IF EXISTS idx_forum_users_forum;
 CREATE INDEX IF NOT EXISTS idx_forum_users_forum ON forum_users(forum);
 DROP INDEX IF EXISTS idx_forum_users_nickname;
 CREATE INDEX IF NOT EXISTS idx_forum_users_nickname ON forum_users(nickname);
+DROP INDEX IF EXISTS idx_forum_users_forum_nickname;
+CREATE INDEX IF NOT EXISTS idx_forum_users_forum_nickname ON forum_users(forum, nickname);
 
 DROP INDEX IF EXISTS idx_forums_slug;
 CREATE INDEX IF NOT EXISTS idx_forums_slug ON forums(slug);
@@ -84,3 +86,5 @@ CREATE INDEX IF NOT EXISTS idx_threads_author ON threads(author);
 DROP INDEX IF EXISTS idx_users_nickname;
 CREATE INDEX IF NOT EXISTS idx_users_nickname ON users(nickname);
 
+DROP INDEX IF EXISTS idx_votes_nickname_thread;
+CREATE INDEX IF NOT EXISTS idx_votes_nickname_thread ON votes(nickname, thread);

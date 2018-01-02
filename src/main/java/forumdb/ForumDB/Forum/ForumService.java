@@ -60,9 +60,17 @@ public class ForumService {
         thread.setId(id);
         thread.setForum(forum.getSlug());
         updateForumThreadCount(forum.getSlug());
+        try {
+            String findNewUsersSql = "SELECT exists(SELECT nickname FROM forum_users WHERE forum = '" + forum.getSlug() + "' and nickname = '" + thread.getAuthor() + "')";
+            Boolean haveUser = jdbcTemplate.queryForObject(findNewUsersSql, Boolean.class);
 
-        String updateForumUsers = "insert into forum_users(nickname, forum) values(?,?)";
-        jdbcTemplate.update(updateForumUsers, new Object[]{thread.getAuthor(), forum.getSlug()});
+            if (!haveUser) {
+                String updateForumUsers = "insert into forum_users(nickname, forum) values(?,?)";
+                jdbcTemplate.update(updateForumUsers, new Object[]{thread.getAuthor(), forum.getSlug()});
+            }
+        } catch (Exception e) {
+            System.out.println(e.toString());
+        }
         return thread;
     }
 
@@ -77,10 +85,12 @@ public class ForumService {
 
     public List<User> getForumUsers(String slug, Integer limit, String since, Boolean desc) {
         String sort = desc ? "desc" : "asc";
-        String sinceInternal = since != null ? " nickname " + (desc ? "< " : "> ") + "'" + since + "' and " : "";
+        String sinceInternal = since != null ? " forum_users.nickname " + (desc ? "< " : "> ") + "'" + since + "' and " : "";
         String limitOp = limit != null ? " limit " + limit : "";
-        String getForumUsersSql = "select users.nickname, fullname, email, about from (select DISTINCT nickname from forum_users where " + sinceInternal + " forum = '" + slug + "' order by nickname " + sort + limitOp + ") as subQuery" +
-                " join users on (users.nickname = subQuery.nickname) order by users.nickname " + sort;
+        String getForumUsersSql = "select forum_users.nickname, fullname, email, about" +
+                " from forum_users " +
+                " join users on (forum_users.nickname = users.nickname)" +
+                " where " + sinceInternal + " forum = '" + slug + "' order by forum_users.nickname " + sort + limitOp;
 //        String getForumUsersSQL =
 //                "select u.* from (" +
 //                "select author from threads where " + sinceInternal + " forum = '" + slug + "'" +
