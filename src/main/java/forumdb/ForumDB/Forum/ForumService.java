@@ -60,7 +60,6 @@ public class ForumService {
         thread.setId(id);
         thread.setForum(forum.getSlug());
         updateForumThreadCount(forum.getSlug());
-        synchronized (this) {
             try {
                 String findNewUsersSql = "SELECT exists(SELECT nickname FROM forum_users WHERE forum = '" + forum.getSlug() + "' and nickname = '" + thread.getAuthor() + "')";
                 Boolean haveUser = jdbcTemplate.queryForObject(findNewUsersSql, Boolean.class);
@@ -72,7 +71,6 @@ public class ForumService {
             } catch (Exception e) {
                 System.out.println(e.toString());
             }
-        }
         return thread;
     }
 
@@ -89,7 +87,7 @@ public class ForumService {
         String sort = desc ? "desc" : "asc";
         String sinceInternal = since != null ? " forum_users.nickname " + (desc ? "< " : "> ") + "'" + since + "' and " : "";
         String limitOp = limit != null ? " limit " + limit : "";
-        String getForumUsersSql = "select forum_users.nickname, fullname, email, about" +
+        String getForumUsersSql = "select distinct forum_users.nickname, fullname, email, about" +
                 " from forum_users " +
                 " join users on (forum_users.nickname = users.nickname)" +
                 " where " + sinceInternal + " forum = '" + slug + "' order by forum_users.nickname " + sort + limitOp;
