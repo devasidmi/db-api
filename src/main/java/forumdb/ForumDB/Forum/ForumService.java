@@ -11,11 +11,19 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import javax.swing.text.DateFormatter;
+import java.sql.*;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 @Service
@@ -60,21 +68,22 @@ public class ForumService {
         thread.setId(id);
         thread.setForum(forum.getSlug());
         updateForumThreadCount(forum.getSlug());
-            try {
-                String findNewUsersSql = "SELECT exists(SELECT nickname FROM forum_users WHERE forum = ? and nickname = ?)";
-                Boolean haveUser = jdbcTemplate.queryForObject(findNewUsersSql,Boolean.class,forum.getSlug(),thread.getAuthor());
+        try {
+            String findNewUsersSql = "SELECT exists(SELECT nickname FROM forum_users WHERE forum = ? and nickname = ?)";
+            Boolean haveUser = jdbcTemplate.queryForObject(findNewUsersSql, Boolean.class, forum.getSlug(), thread.getAuthor());
 
-                if (!haveUser) {
-                    String updateForumUsers = "insert into forum_users(nickname, forum) values(?,?)";
-                    jdbcTemplate.update(updateForumUsers, new Object[]{thread.getAuthor(), forum.getSlug()});
-                }
-            } catch (Exception e) {
-                System.out.println(e.toString());
+            if (!haveUser) {
+                String updateForumUsers = "insert into forum_users(nickname, forum) values(?,?)";
+                jdbcTemplate.update(updateForumUsers, new Object[]{thread.getAuthor(), forum.getSlug()});
             }
+        } catch (Exception e) {
+            System.out.println(e.toString());
+        }
         return thread;
     }
 
     public ResponseEntity getForumThreads(String slug, int limit, String since, Boolean desc) {
+        ArrayList args = new ArrayList();
         String getForumBranchesSQL = "select * from threads t " +
                 "where t.forum = ?" +
                 (since != null ? " and t.created " + (desc ? "<= " : ">= ") + "'" + since + "'" : "") +
@@ -90,7 +99,8 @@ public class ForumService {
         String getForumUsersSql = "select distinct forum_users.nickname, fullname, email, about" +
                 " from forum_users " +
                 " join users on (forum_users.nickname = users.nickname)" +
-                " where " + sinceInternal + " forum = '" + slug + "' order by forum_users.nickname " + sort + limitOp;
+                " where " + sinceInternal + " forum = ? order by forum_users.nickname " + sort + limitOp;
+
 //        String getForumUsersSQL =
 //                "select u.* from (" +
 //                "select author from threads where " + sinceInternal + " forum = '" + slug + "'" +
