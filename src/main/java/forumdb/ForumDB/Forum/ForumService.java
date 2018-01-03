@@ -95,11 +95,6 @@ public class ForumService {
         getForumBranchesSQL += " order by t.created " + (desc ? "desc" : "asc") + " limit ?";
         args.add(limit);
 
-//        String getForumBranchesSQL = "select * from threads t " +
-//                "where t.forum = ?" +
-//                (since != null ? " and t.created " + (desc ? "<= " : ">= ") + "'" + since + "'" : "") +
-//                " order by t.created " + (desc ? "desc" : "asc") +
-//                " limit ?";
         return new ResponseEntity(jdbcTemplate.query(getForumBranchesSQL, new ThreadMapper(), args.toArray()), HttpStatus.OK);
     }
 
@@ -121,18 +116,6 @@ public class ForumService {
             getForumUsersSql += " limit ?::INT";
             args.add(limit);
         }
-//        String sinceInternal = since != null ? " forum_users.nickname " + (desc ? "< " : "> ") + "'" + since + "' and " : "";
-//        String sinceInternal = since != null ? " forum_users.nickname " + (desc ? "< " : "> ") + "'" + since + "' and " : "";
-//        String getForumUsersSQL =
-//                "select u.* from (" +
-//                "select author from threads where " + sinceInternal + " forum = '" + slug + "'" +
-//                " union " +
-//                "select author from posts where " + sinceInternal +  "forum = '" + slug + "'" +
-//                " order by author " + sort + " " + limitOp +
-//                ") as authors " +
-//                        "join users u on(u.nickname = authors.author) " +
-//                " order by nickname " + sort +
-//                        limitOp;
         return jdbcTemplate.query(getForumUsersSql, args.toArray(), new UserMapper());
     }
 }

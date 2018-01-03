@@ -27,9 +27,6 @@ public class UserService {
 
     public void updateUser(User user) {
         String updateUserSql = "update users set ";
-//                (user.getFullname() != null ? "fullname = '" + user.getFullname() + "'," : "") +
-//                (user.getEmail() != null ? "email = '" + user.getEmail() + "'," : "") +
-//                (user.getAbout() != null ? "about = '" + user.getAbout() + "'," : "");
         List<Object> args = new ArrayList<>();
         if (user.getFullname() != null) {
             updateUserSql += "fullname = ?,";

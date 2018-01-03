@@ -33,7 +33,6 @@ public class PostService {
         List<Long> ids = jdbcTemplate.query("select nextval('posts_id_seq') from generate_series(1, ?)", new Object[]{posts.size()}, (rs, rowNum) -> rs.getLong(1));
         Set<String> parents = posts.stream().filter(p -> p.getParent() != 0).map(Post::getParent).map(String::valueOf).collect(Collectors.toSet());
         if (!parents.isEmpty()) {
-//            String checkParents = "select count(id) from posts where thread = " + thread.getId() + " and id in (" + String.join(", ", parents) + ")";
             String checkParents = "select count(id) from posts where thread = ? and id in (" + String.join(", ", parents) + ")";
             int parentsCount = jdbcTemplate.queryForObject(checkParents, new Object[]{thread.getId()}, Integer.class);
             if (parents.size() != parentsCount) {
@@ -72,21 +71,16 @@ public class PostService {
 
         List<String> users = new ArrayList<>(posts.stream().map(Post::getAuthor).collect(Collectors.toSet()));
 
-//        synchronized (this) {
         try {
 
             if (!users.isEmpty()) {
-//                    String findNewUsersSql = "SELECT distinct nickname FROM forum_users WHERE forum = '" + thread.getForum() + "' and nickname in (" +
-//                            String.join(",", users.stream().map(s -> "'" + s + "'").collect(Collectors.toList())) + ")";
 
                 List<Object> args = new ArrayList<>();
-                String findNewUsersSql = "SELECT distinct nickname FROM forum_users WHERE forum = ? and nickname in "+
-                        "("+String.join(",", Collections.nCopies(users.size(),"?"))+")";
+                String findNewUsersSql = "SELECT distinct nickname FROM forum_users WHERE forum = ? and nickname in " +
+                        "(" + String.join(",", Collections.nCopies(users.size(), "?")) + ")";
                 args.add(thread.getForum());
                 args.addAll(users);
 
-//                String findNewUsersSql = "SELECT distinct nickname FROM forum_users WHERE forum = ? and nickname in (" +
-//                        String.join(",", users.stream().map(s -> "'" + s + "'").collect(Collectors.toList())) + ")";
                 HashSet<String> oldUsers = new HashSet<>(jdbcTemplate.queryForList(findNewUsersSql, args.toArray(), String.class));
                 List<String> newUsers = users.stream().filter(n -> !oldUsers.contains(n)).collect(Collectors.toList());
 
@@ -112,7 +106,6 @@ public class PostService {
         }
         String sqlUpdate = "update forums set posts = posts + ? where slug = ?";
         jdbcTemplate.update(sqlUpdate, posts.size(), thread.getForum());
-//        }
         return posts;
     }
 

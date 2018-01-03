@@ -45,8 +45,6 @@ public class ThreadService {
         }
         List<Object> args = new ArrayList<>();
         String updateThreadInfoSql = "update threads set ";
-//                (thread.getMessage() != null ? "message = '" + thread.getMessage() + "'," : "") +
-//                (thread.getTitle() != null ? "title = '" + thread.getTitle() + "'," : "");
 
         if (thread.getMessage() != null) {
             args.add(thread.getMessage());
@@ -60,7 +58,6 @@ public class ThreadService {
         if (!updateThreadInfoSql.endsWith(",")) {
             return oldThread;
         }
-//        updateThreadInfoSql = updateThreadInfoSql.substring(0, updateThreadInfoSql.length() - 1) + " where id = " + String.valueOf(oldThread.getId());
         updateThreadInfoSql = updateThreadInfoSql.substring(0, updateThreadInfoSql.length() - 1) + " where id = ?";
         args.add(oldThread.getId());
         jdbcTemplate.update(updateThreadInfoSql, args.toArray());
@@ -122,10 +119,6 @@ public class ThreadService {
         getPostsTreeSQL += " order by p.path " + sort;
         args.add(limit);
         getPostsTreeSQL += " limit ?";
-//        String getPostsTreeSQL = "select author, created, forum, id, message, thread, path, parent from posts p" +
-//                " where p.thread = ?" + (since != 0 ? " and p.path " + op + " (select path from posts where id = " + since + ")" : "") +
-//                " order by p.path " + sort + "" +
-//                " limit ?";
 
         return jdbcTemplate.query(getPostsTreeSQL, args.toArray(), new PostTreeMapper());
     }
@@ -143,12 +136,10 @@ public class ThreadService {
         }
         subQuery += "order by id " + sort + " limit ?";
         args.add(limit);
-//        String subQuery = "select id from posts where thread = ? and parent = 0" + (since != 0 ? " and path " + op + " (select path from posts where id = " + since + ")" : "") + "order by id " + sort + " limit ?";
         String getPostsParentSql = "select author, created, forum, id, message, thread, path, parent from posts p" +
                 " where p.thread = ? and path[1] in (" + subQuery + ")" +
                 " order by p.path " + sort;
 
-//        return jdbcTemplate.query(getPostsParentSql, new Object[]{thread.getId(), thread.getId(), limit}, new PostTreeMapper());
         return jdbcTemplate.query(getPostsParentSql, args.toArray(), new PostTreeMapper());
     }
 
@@ -169,14 +160,8 @@ public class ThreadService {
         args.add(limit);
 
 
-//        String getPostsFlatSQL = "select id, parent, thread, author, forum, isEdited, message, created " +
-//                "from posts p " +
-//                " where p.thread = ? " + (since != 0 ? "and p.id " + (desc ? "<" : ">") + " " + since + " " : "") +
-//                ("order by p.created " + (desc ? "desc" : "asc") + ", id " + (desc ? "desc" : "asc") + " " +
-//                        "limit ?");
 
         List<Post> list = jdbcTemplate.query(getPostsFlatSQL, args.toArray(), new PostMapper());
-//        List<Post> list = jdbcTemplate.query(getPostsFlatSQL, new Object[]{thread.getId(), limit}, new PostMapper());
         return list;
     }
 
