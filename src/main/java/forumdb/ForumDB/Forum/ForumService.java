@@ -99,8 +99,7 @@ public class ForumService {
         String getForumUsersSql = "select distinct forum_users.nickname, fullname, email, about" +
                 " from forum_users " +
                 " join users on (forum_users.nickname = users.nickname)" +
-                " where " + sinceInternal + " forum = ? order by forum_users.nickname " + sort + limitOp;
-
+                " where " + sinceInternal + " forum = '" + slug + "' order by forum_users.nickname " + sort + limitOp;
 //        String getForumUsersSQL =
 //                "select u.* from (" +
 //                "select author from threads where " + sinceInternal + " forum = '" + slug + "'" +
