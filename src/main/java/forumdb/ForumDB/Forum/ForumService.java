@@ -83,13 +83,26 @@ public class ForumService {
     }
 
     public ResponseEntity getForumThreads(String slug, int limit, String since, Boolean desc) {
-        ArrayList args = new ArrayList();
+        List<Object> args = new ArrayList<>();
+
+        args.add(slug);
         String getForumBranchesSQL = "select * from threads t " +
-                "where t.forum = ?" +
-                (since != null ? " and t.created " + (desc ? "<= " : ">= ") + "'" + since + "'" : "") +
+                "where t.forum = ?";
+        if (since != null) {
+            args.add(since);
+            getForumBranchesSQL += " and t.created " + (desc ? "<= " : ">= ") + "?::timestamptz";
+        }
+        getForumBranchesSQL +=
                 " order by t.created " + (desc ? "desc" : "asc") +
-                " limit ?";
-        return new ResponseEntity(jdbcTemplate.query(getForumBranchesSQL, new ThreadMapper(), new Object[]{slug, limit}), HttpStatus.OK);
+                        " limit ?";
+        args.add(limit);
+
+//        String getForumBranchesSQL = "select * from threads t " +
+//                "where t.forum = ?" +
+//                (since != null ? " and t.created " + (desc ? "<= " : ">= ") + "'" + since + "'" : "") +
+//                " order by t.created " + (desc ? "desc" : "asc") +
+//                " limit ?";
+        return new ResponseEntity(jdbcTemplate.query(getForumBranchesSQL, new ThreadMapper(), args.toArray()), HttpStatus.OK);
     }
 
     public List<User> getForumUsers(String slug, Integer limit, String since, Boolean desc) {

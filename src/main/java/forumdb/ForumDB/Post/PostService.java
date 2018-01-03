@@ -36,8 +36,9 @@ public class PostService {
         List<Long> ids = jdbcTemplate.query("select nextval('posts_id_seq') from generate_series(1, ?)", new Object[]{posts.size()}, (rs, rowNum) -> rs.getLong(1));
         Set<String> parents = posts.stream().filter(p -> p.getParent() != 0).map(Post::getParent).map(String::valueOf).collect(Collectors.toSet());
         if (!parents.isEmpty()) {
-            String checkParents = "select count(id) from posts where thread = " + thread.getId() + " and id in (" + String.join(", ", parents) + ")";
-            int parentsCount = jdbcTemplate.queryForObject(checkParents, Integer.class);
+//            String checkParents = "select count(id) from posts where thread = " + thread.getId() + " and id in (" + String.join(", ", parents) + ")";
+            String checkParents = "select count(id) from posts where thread = ? and id in (" + String.join(", ", parents) + ")";
+            int parentsCount = jdbcTemplate.queryForObject(checkParents, new Object[]{thread.getId()}, Integer.class);
             if (parents.size() != parentsCount) {
                 System.out.println();
             }
@@ -74,38 +75,40 @@ public class PostService {
 
         List<String> users = new ArrayList<>(posts.stream().map(Post::getAuthor).collect(Collectors.toSet()));
 
-        synchronized (this) {
-            try {
+//        synchronized (this) {
+        try {
 
-                if (!users.isEmpty()) {
-                    String findNewUsersSql = "SELECT nickname FROM forum_users WHERE forum = '" + thread.getForum() + "' and nickname in (" +
-                            String.join(",", users.stream().map(s -> "'" + s + "'").collect(Collectors.toList())) + ")";
-                    HashSet<String> oldUsers = new HashSet<>(jdbcTemplate.queryForList(findNewUsersSql, String.class));
-                    List<String> newUsers = users.stream().filter(n -> !oldUsers.contains(n)).collect(Collectors.toList());
+            if (!users.isEmpty()) {
+//                    String findNewUsersSql = "SELECT distinct nickname FROM forum_users WHERE forum = '" + thread.getForum() + "' and nickname in (" +
+//                            String.join(",", users.stream().map(s -> "'" + s + "'").collect(Collectors.toList())) + ")";
+                String findNewUsersSql = "SELECT distinct nickname FROM forum_users WHERE forum = ? and nickname in (" +
+                        String.join(",", users.stream().map(s -> "'" + s + "'").collect(Collectors.toList())) + ")";
+                HashSet<String> oldUsers = new HashSet<>(jdbcTemplate.queryForList(findNewUsersSql, new Object[]{thread.getForum()}, String.class));
+                List<String> newUsers = users.stream().filter(n -> !oldUsers.contains(n)).collect(Collectors.toList());
 
-                    if (!newUsers.isEmpty()) {
-                        String createUserForumsSQL = "insert into forum_users(nickname, forum) values(?,?)";
-                        jdbcTemplate.batchUpdate(createUserForumsSQL, new BatchPreparedStatementSetter() {
-                            @Override
-                            public void setValues(PreparedStatement ps, int i) throws SQLException {
-                                ps.setString(1, newUsers.get(i));
-                                ps.setString(2, thread.getForum());
-                            }
+                if (!newUsers.isEmpty()) {
+                    String createUserForumsSQL = "insert into forum_users(nickname, forum) values(?,?)";
+                    jdbcTemplate.batchUpdate(createUserForumsSQL, new BatchPreparedStatementSetter() {
+                        @Override
+                        public void setValues(PreparedStatement ps, int i) throws SQLException {
+                            ps.setString(1, newUsers.get(i));
+                            ps.setString(2, thread.getForum());
+                        }
 
-                            @Override
-                            public int getBatchSize() {
-                                return newUsers.size();
-                            }
-                        });
-                    }
+                        @Override
+                        public int getBatchSize() {
+                            return newUsers.size();
+                        }
+                    });
                 }
-
-            } catch (Exception e) {
-                System.out.println(e.toString());
             }
-            String sqlUpdate = "update forums set posts = posts + ? where slug = ?";
-            jdbcTemplate.update(sqlUpdate, posts.size(), thread.getForum());
+
+        } catch (Exception e) {
+            System.out.println(e.toString());
         }
+        String sqlUpdate = "update forums set posts = posts + ? where slug = ?";
+        jdbcTemplate.update(sqlUpdate, posts.size(), thread.getForum());
+//        }
         return posts;
     }
 
