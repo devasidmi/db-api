@@ -26,15 +26,29 @@ public class UserService {
     }
 
     public void updateUser(User user) {
-        String updateUserSql = "update users set " +
-                (user.getFullname() != null ? "fullname = '" + user.getFullname() + "'," : "") +
-                (user.getEmail() != null ? "email = '" + user.getEmail() + "'," : "") +
-                (user.getAbout() != null ? "about = '" + user.getAbout() + "'," : "");
+        String updateUserSql = "update users set ";
+//                (user.getFullname() != null ? "fullname = '" + user.getFullname() + "'," : "") +
+//                (user.getEmail() != null ? "email = '" + user.getEmail() + "'," : "") +
+//                (user.getAbout() != null ? "about = '" + user.getAbout() + "'," : "");
+        List<Object> args = new ArrayList<>();
+        if (user.getFullname() != null) {
+            updateUserSql += "fullname = ?,";
+            args.add(user.getFullname());
+        }
+        if (user.getEmail() != null) {
+            updateUserSql += "email = ?,";
+            args.add(user.getEmail());
+        }
+        if (user.getAbout() != null) {
+            updateUserSql += "about = ?,";
+            args.add(user.getAbout());
+        }
+        args.add(user.getNickname().toLowerCase());
 
         if (!updateUserSql.endsWith(",")) {
             return;
         }
         updateUserSql = updateUserSql.substring(0, updateUserSql.length() - 1) + " where lower(nickname) = ?";
-        jdbcTemplate.update(updateUserSql.toString(), user.getNickname().toLowerCase());
+        jdbcTemplate.update(updateUserSql.toString(), args.toArray());
     }
 }
