@@ -92,9 +92,7 @@ public class ForumService {
             args.add(since);
             getForumBranchesSQL += " and t.created " + (desc ? "<= " : ">= ") + "?::timestamptz";
         }
-        getForumBranchesSQL +=
-                " order by t.created " + (desc ? "desc" : "asc") +
-                        " limit ?";
+        getForumBranchesSQL += " order by t.created " + (desc ? "desc" : "asc") + " limit ?";
         args.add(limit);
 
 //        String getForumBranchesSQL = "select * from threads t " +
@@ -107,12 +105,24 @@ public class ForumService {
 
     public List<User> getForumUsers(String slug, Integer limit, String since, Boolean desc) {
         String sort = desc ? "desc" : "asc";
-        String sinceInternal = since != null ? " forum_users.nickname " + (desc ? "< " : "> ") + "'" + since + "' and " : "";
-        String limitOp = limit != null ? " limit " + limit : "";
+
         String getForumUsersSql = "select distinct forum_users.nickname, fullname, email, about" +
                 " from forum_users " +
-                " join users on (forum_users.nickname = users.nickname)" +
-                " where " + sinceInternal + " forum = '" + slug + "' order by forum_users.nickname " + sort + limitOp;
+                " join users on (forum_users.nickname = users.nickname) where ";
+        List<Object> args = new ArrayList<>();
+
+        if (since != null) {
+            getForumUsersSql += " forum_users.nickname " + (desc ? "< " : "> ") + "?::CITEXT and ";
+            args.add(since);
+        }
+        getForumUsersSql += " forum = ?::CITEXT order by forum_users.nickname " + sort;
+        args.add(slug);
+        if (limit != null) {
+            getForumUsersSql += " limit ?::INT";
+            args.add(limit);
+        }
+//        String sinceInternal = since != null ? " forum_users.nickname " + (desc ? "< " : "> ") + "'" + since + "' and " : "";
+//        String sinceInternal = since != null ? " forum_users.nickname " + (desc ? "< " : "> ") + "'" + since + "' and " : "";
 //        String getForumUsersSQL =
 //                "select u.* from (" +
 //                "select author from threads where " + sinceInternal + " forum = '" + slug + "'" +
@@ -123,6 +133,6 @@ public class ForumService {
 //                        "join users u on(u.nickname = authors.author) " +
 //                " order by nickname " + sort +
 //                        limitOp;
-        return jdbcTemplate.query(getForumUsersSql, new UserMapper());
+        return jdbcTemplate.query(getForumUsersSql, args.toArray(), new UserMapper());
     }
 }

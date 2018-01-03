@@ -12,10 +12,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -81,9 +78,16 @@ public class PostService {
             if (!users.isEmpty()) {
 //                    String findNewUsersSql = "SELECT distinct nickname FROM forum_users WHERE forum = '" + thread.getForum() + "' and nickname in (" +
 //                            String.join(",", users.stream().map(s -> "'" + s + "'").collect(Collectors.toList())) + ")";
-                String findNewUsersSql = "SELECT distinct nickname FROM forum_users WHERE forum = ? and nickname in (" +
-                        String.join(",", users.stream().map(s -> "'" + s + "'").collect(Collectors.toList())) + ")";
-                HashSet<String> oldUsers = new HashSet<>(jdbcTemplate.queryForList(findNewUsersSql, new Object[]{thread.getForum()}, String.class));
+
+                List<Object> args = new ArrayList<>();
+                String findNewUsersSql = "SELECT distinct nickname FROM forum_users WHERE forum = ? and nickname in "+
+                        "("+String.join(",", Collections.nCopies(users.size(),"?"))+")";
+                args.add(thread.getForum());
+                args.addAll(users);
+
+//                String findNewUsersSql = "SELECT distinct nickname FROM forum_users WHERE forum = ? and nickname in (" +
+//                        String.join(",", users.stream().map(s -> "'" + s + "'").collect(Collectors.toList())) + ")";
+                HashSet<String> oldUsers = new HashSet<>(jdbcTemplate.queryForList(findNewUsersSql, args.toArray(), String.class));
                 List<String> newUsers = users.stream().filter(n -> !oldUsers.contains(n)).collect(Collectors.toList());
 
                 if (!newUsers.isEmpty()) {
